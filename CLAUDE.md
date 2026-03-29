@@ -19,6 +19,12 @@ go test -race ./...
 
 # Lint (if golangci-lint installed)
 golangci-lint run
+
+# Test a specific package
+go test ./internal/monitor/...
+
+# Test a specific function
+go test -run TestFunctionName ./internal/monitor/...
 ```
 
 ## Architecture
@@ -26,11 +32,19 @@ golangci-lint run
 ```
 cmd/livepulse/main.go    -> entry point
 internal/monitor/         -> check engine + check type implementations
-internal/tui/             -> bubbletea TUI (dashboard, detail, setup views)
+internal/tui/             -> bubbletea TUI (dashboard, detail, setup, styles)
 internal/tui/components/  -> reusable TUI components (sparkline, statusbar, eventlog)
 internal/alert/           -> alert state machine + dispatchers (visual, desktop, webhook)
 internal/store/           -> persistence layer (~/.livepulse/monitors.json)
 ```
+
+## Key Files
+
+- `cmd/livepulse/main.go` — entry point, wires engine + TUI
+- `internal/monitor/check.go` — `Checker` interface all check types implement
+- `internal/tui/app.go` — main bubbletea `Model` composing all views
+- `internal/tui/styles.go` — shared lipgloss styles/theme
+- `internal/store/store.go` — monitor persistence to `~/.livepulse/monitors.json`
 
 ## Key Libraries
 
@@ -70,6 +84,7 @@ internal/store/           -> persistence layer (~/.livepulse/monitors.json)
 - `gopsutil` requires cgo on some platforms — test cross-platform builds
 - Webhook POSTs must be non-blocking (use goroutine with timeout) to avoid stalling the monitor loop
 - Desktop notifications may require permissions on macOS (System Settings -> Notifications)
+- Charm libraries use v2 `charm.land` import paths (e.g. `charm.land/bubbletea/v2`), not the old `github.com/charmbracelet` paths
 
 ## Monitor State Persistence
 
