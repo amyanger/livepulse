@@ -306,7 +306,7 @@ func (m setupModel) prevStep(current setupStep) setupStep {
 func (m setupModel) View() string {
 	var sections []string
 
-	header := headerStyle.Render("Setup Monitor")
+	header := gradientHeaderStyle.Width(80).Render("◆  Setup Monitor")
 	sections = append(sections, header)
 	sections = append(sections, "")
 
@@ -329,7 +329,11 @@ func (m setupModel) View() string {
 			}
 		}
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  j/k:navigate  enter:select  esc:cancel"))
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"j/k", "navigate"},
+			{"enter", "select"},
+			{"esc", "cancel"},
+		}))
 
 	case stepTarget:
 		title := "Enter Target"
@@ -340,67 +344,96 @@ func (m setupModel) View() string {
 		sections = append(sections, "")
 		sections = append(sections, "  "+m.targetInput.View())
 		sections = append(sections, "")
-		hint := helpStyle.Render("  enter:next  esc:cancel")
 		if monitorTypes[m.typeIdx] == "process" {
-			hint = helpStyle.Render("  e.g. nginx, postgres, redis  |  enter:next  esc:cancel")
+			sections = append(sections, helpStyle.Render("  e.g. nginx, postgres, redis"))
 		}
-		sections = append(sections, hint)
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"enter", "next"},
+			{"esc", "cancel"},
+		}))
 
 	case stepName:
 		sections = append(sections, titleStyle.Render("Enter Name"))
 		sections = append(sections, "")
 		sections = append(sections, "  "+m.nameInput.View())
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  enter:next  esc:cancel"))
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"enter", "next"},
+			{"esc", "cancel"},
+		}))
 
 	case stepInterval:
 		sections = append(sections, titleStyle.Render("Check Interval (seconds)"))
 		sections = append(sections, "")
 		sections = append(sections, "  "+m.intervalInput.View())
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  enter:next  esc:cancel"))
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"enter", "next"},
+			{"esc", "cancel"},
+		}))
 
 	case stepCPUThreshold:
 		sections = append(sections, titleStyle.Render("CPU Threshold (%)"))
 		sections = append(sections, "")
 		sections = append(sections, "  "+m.cpuThresholdInput.View())
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  enter:next  esc:cancel"))
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"enter", "next"},
+			{"esc", "cancel"},
+		}))
 
 	case stepMemThreshold:
 		sections = append(sections, titleStyle.Render("Memory Threshold (%)"))
 		sections = append(sections, "")
 		sections = append(sections, "  "+m.memThresholdInput.View())
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  enter:next  esc:cancel"))
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"enter", "next"},
+			{"esc", "cancel"},
+		}))
 
 	case stepAlertVisual:
 		sections = append(sections, titleStyle.Render("Enable Visual Alerts?"))
 		sections = append(sections, "")
 		sections = append(sections, fmt.Sprintf("  Current: %s", boolLabel(m.alertVisual)))
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  y:yes  n:no  esc:cancel"))
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"y", "yes"},
+			{"n", "no"},
+			{"esc", "cancel"},
+		}))
 
 	case stepAlertDesktop:
 		sections = append(sections, titleStyle.Render("Enable Desktop Notifications?"))
 		sections = append(sections, "")
 		sections = append(sections, fmt.Sprintf("  Current: %s", boolLabel(m.alertDesktop)))
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  y:yes  n:no  esc:cancel"))
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"y", "yes"},
+			{"n", "no"},
+			{"esc", "cancel"},
+		}))
 
 	case stepWebhook:
 		sections = append(sections, titleStyle.Render("Webhook URL (optional)"))
 		sections = append(sections, "")
 		sections = append(sections, "  "+m.webhookInput.View())
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  enter:next  esc:cancel"))
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"enter", "next"},
+			{"esc", "cancel"},
+		}))
 
 	case stepConfirm:
 		sections = append(sections, titleStyle.Render("Confirm Monitor"))
 		sections = append(sections, "")
 		sections = append(sections, m.renderSummary())
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  enter:save  backspace:back  esc:cancel"))
+		sections = append(sections, renderHelpBar([]struct{ key, desc string }{
+			{"enter", "save"},
+			{"backspace", "back"},
+			{"esc", "cancel"},
+		}))
 	}
 
 	return strings.Join(sections, "\n")
@@ -417,9 +450,9 @@ func (m setupModel) renderProgress() string {
 		}
 		switch {
 		case step == m.step:
-			parts = append(parts, titleStyle.Render("-> "+label))
+			parts = append(parts, titleStyle.Render("▸ "+label))
 		case step < m.step:
-			parts = append(parts, healthyStyle.Render("v "+label))
+			parts = append(parts, healthyStyle.Render("✓ "+label))
 		default:
 			parts = append(parts, helpStyle.Render("  "+label))
 		}

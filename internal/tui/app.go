@@ -47,8 +47,9 @@ type App struct {
 	height      int
 
 	// Components
-	statusBar *components.StatusBar
-	eventLog  *components.EventLog
+	statusBar      *components.StatusBar
+	eventLog       *components.EventLog
+	eventsExpanded bool
 
 	// Engine
 	engine    *monitor.Engine
@@ -146,7 +147,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a *App) View() tea.View {
 	switch a.currentView {
 	case viewDashboard:
-		return tea.NewView(renderDashboard(a.monitors, a.selected, a.statusBar, a.eventLog, a.width, a.height))
+		return tea.NewView(renderDashboard(a.monitors, a.selected, a.statusBar, a.eventLog, a.eventsExpanded, a.width, a.height))
 	case viewDetail:
 		mv, results, spark := a.detailData()
 		return tea.NewView(renderDetail(mv, results, spark, a.width))
@@ -212,6 +213,9 @@ func (a *App) updateDashboard(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.eventLog.Add(name, "press d again to confirm delete", false)
 			}
 		}
+	case "v":
+		a.clearPendingDelete()
+		a.eventsExpanded = !a.eventsExpanded
 	case "?":
 		a.clearPendingDelete()
 		a.currentView = viewHelp
@@ -546,65 +550,61 @@ func (a *App) detailData() (MonitorView, []monitor.CheckResult, *components.Spar
 	return MonitorView{}, nil, nil
 }
 
-// renderHelp renders a static help view with keybinding documentation.
+// renderHelp renders a static help view with polished keybinding documentation.
 func renderHelp(width int) string {
 	var sections []string
 
-	header := headerStyle.Width(width).Render("livepulse -- Help")
+	header := gradientHeaderStyle.Width(width).Render("◆  Help")
 	sections = append(sections, header)
 	sections = append(sections, "")
 
-	sections = append(sections, titleStyle.Render("Dashboard"))
+	// Navigation group
+	sections = append(sections, sectionHeaderStyle.Render("  NAVIGATION"))
 	sections = append(sections, "")
-	bindings := []struct{ key, desc string }{
+	navBindings := []struct{ key, desc string }{
 		{"j / k", "Navigate monitors"},
 		{"Enter", "View monitor detail"},
+		{"Esc", "Back to dashboard"},
+		{"?", "Toggle help"},
+	}
+	for _, b := range navBindings {
+		sections = append(sections, fmt.Sprintf("  %s  %s",
+			helpKeyStyle.Width(16).Render(b.key),
+			helpDescStyle.Render(b.desc),
+		))
+	}
+
+	sections = append(sections, "")
+	sections = append(sections, sectionHeaderStyle.Render("  ACTIONS"))
+	sections = append(sections, "")
+	actionBindings := []struct{ key, desc string }{
 		{"a", "Add new monitor"},
 		{"e", "Edit selected monitor"},
-		{"d", "Delete selected monitor"},
-		{"?", "Toggle help"},
+		{"d", "Delete selected monitor (press twice)"},
+	}
+	for _, b := range actionBindings {
+		sections = append(sections, fmt.Sprintf("  %s  %s",
+			helpKeyStyle.Width(16).Render(b.key),
+			helpDescStyle.Render(b.desc),
+		))
+	}
+
+	sections = append(sections, "")
+	sections = append(sections, sectionHeaderStyle.Render("  VIEWS"))
+	sections = append(sections, "")
+	viewBindings := []struct{ key, desc string }{
+		{"v", "Toggle event log"},
 		{"q", "Quit"},
 	}
-	for _, b := range bindings {
+	for _, b := range viewBindings {
 		sections = append(sections, fmt.Sprintf("  %s  %s",
-			labelStyle.Render(b.key),
-			valueStyle.Render(b.desc),
+			helpKeyStyle.Width(16).Render(b.key),
+			helpDescStyle.Render(b.desc),
 		))
 	}
 
 	sections = append(sections, "")
-	sections = append(sections, titleStyle.Render("Detail View"))
-	sections = append(sections, "")
-	detailBindings := []struct{ key, desc string }{
-		{"Esc", "Back to dashboard"},
-		{"e", "Edit monitor"},
-		{"d", "Delete monitor"},
-	}
-	for _, b := range detailBindings {
-		sections = append(sections, fmt.Sprintf("  %s  %s",
-			labelStyle.Render(b.key),
-			valueStyle.Render(b.desc),
-		))
-	}
-
-	sections = append(sections, "")
-	sections = append(sections, titleStyle.Render("Setup Wizard"))
-	sections = append(sections, "")
-	setupBindings := []struct{ key, desc string }{
-		{"j / k", "Navigate options"},
-		{"Enter", "Confirm / next step"},
-		{"Esc", "Cancel"},
-		{"y / n", "Toggle boolean options"},
-	}
-	for _, b := range setupBindings {
-		sections = append(sections, fmt.Sprintf("  %s  %s",
-			labelStyle.Render(b.key),
-			valueStyle.Render(b.desc),
-		))
-	}
-
-	sections = append(sections, "")
-	sections = append(sections, titleStyle.Render("Monitor Types"))
+	sections = append(sections, sectionHeaderStyle.Render("  MONITOR TYPES"))
 	sections = append(sections, "")
 	typeDescs := []struct{ name, desc string }{
 		{"http", "Check HTTP endpoint status and response time"},
@@ -615,13 +615,18 @@ func renderHelp(width int) string {
 	}
 	for _, td := range typeDescs {
 		sections = append(sections, fmt.Sprintf("  %s  %s",
-			labelStyle.Render(td.name),
-			valueStyle.Render(td.desc),
+			helpKeyStyle.Width(16).Render(td.name),
+			helpDescStyle.Render(td.desc),
 		))
 	}
 
 	sections = append(sections, "")
-	sections = append(sections, helpStyle.Render("  Press esc, ?, or q to return"))
+	help := renderHelpBar([]struct{ key, desc string }{
+		{"esc", "back"},
+		{"?", "close"},
+		{"q", "close"},
+	})
+	sections = append(sections, help)
 
 	return strings.Join(sections, "\n")
 }
