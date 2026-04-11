@@ -6,7 +6,7 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// StatusBar displays a summary of monitor health counts.
+// StatusBar displays a summary of monitor health counts as pill badges.
 type StatusBar struct {
 	healthy  int
 	degraded int
@@ -28,17 +28,28 @@ func (s *StatusBar) Update(healthy, degraded, down int) {
 	s.total = healthy + degraded + down
 }
 
-// View renders the status bar as a styled string.
+// View renders the status bar as pill-shaped badges with tinted backgrounds.
 func (s *StatusBar) View() string {
-	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
-	yellowStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFD700"))
-	redStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000"))
-	mutedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
+	healthyPill := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#4ADE80")).
+		Background(lipgloss.Color("#1a2e1a")).
+		Bold(true).
+		Padding(0, 1).
+		Render(fmt.Sprintf("● %d healthy", s.healthy))
 
-	return fmt.Sprintf("%s %s  %s %s  %s %s  %s %s",
-		greenStyle.Render("●"), greenStyle.Render(fmt.Sprintf("%d healthy", s.healthy)),
-		yellowStyle.Render("●"), yellowStyle.Render(fmt.Sprintf("%d degraded", s.degraded)),
-		redStyle.Render("●"), redStyle.Render(fmt.Sprintf("%d down", s.down)),
-		mutedStyle.Render("|"), mutedStyle.Render(fmt.Sprintf("%d total", s.total)),
-	)
+	degradedPill := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FBBF24")).
+		Background(lipgloss.Color("#2e2a1a")).
+		Bold(true).
+		Padding(0, 1).
+		Render(fmt.Sprintf("● %d degraded", s.degraded))
+
+	downPill := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#F87171")).
+		Background(lipgloss.Color("#2e1a1a")).
+		Bold(true).
+		Padding(0, 1).
+		Render(fmt.Sprintf("● %d down", s.down))
+
+	return fmt.Sprintf("%s  %s  %s", healthyPill, degradedPill, downPill)
 }
