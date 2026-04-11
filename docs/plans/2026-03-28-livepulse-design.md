@@ -84,7 +84,6 @@ livepulse/
 │   └── plans/
 ├── go.mod
 ├── go.sum
-└── CLAUDE.md
 ```
 
 ### State Management
