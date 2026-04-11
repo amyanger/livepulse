@@ -1,6 +1,11 @@
 package components
 
-import "strings"
+import (
+	"image/color"
+	"strings"
+
+	"charm.land/lipgloss/v2"
+)
 
 var blocks = []rune{'▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'}
 
@@ -23,8 +28,19 @@ func (s *Sparkline) Push(val float64) {
 	}
 }
 
-// View renders the sparkline as a string of Unicode block characters.
+// View renders the sparkline as an uncolored string of Unicode block characters.
 func (s *Sparkline) View() string {
+	return s.render()
+}
+
+// ViewColored renders the sparkline with the given color applied.
+func (s *Sparkline) ViewColored(c color.Color) string {
+	raw := s.render()
+	return lipgloss.NewStyle().Foreground(c).Render(raw)
+}
+
+// render builds the raw sparkline string.
+func (s *Sparkline) render() string {
 	if len(s.values) == 0 {
 		return strings.Repeat(" ", s.maxWidth)
 	}
