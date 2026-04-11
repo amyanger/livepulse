@@ -15,10 +15,12 @@ import (
 type setupStep int
 
 const (
-	stepType setupStep = iota
+	stepType         setupStep = iota
 	stepTarget
 	stepName
 	stepInterval
+	stepCPUThreshold
+	stepMemThreshold
 	stepAlertVisual
 	stepAlertDesktop
 	stepWebhook
@@ -26,11 +28,12 @@ const (
 )
 
 // monitorTypes lists the available monitor types for selection.
-var monitorTypes = []string{"http", "tcp", "system", "command"}
+var monitorTypes = []string{"http", "tcp", "system", "command", "process"}
 
 // stepLabels maps each step to a display label for the progress indicator.
 var stepLabels = []string{
 	"Type", "Target", "Name", "Interval",
+	"CPU Threshold", "Mem Threshold",
 	"Visual Alert", "Desktop Alert", "Webhook", "Confirm",
 }
 
@@ -42,10 +45,12 @@ type setupModel struct {
 	nameInput    textinput.Model
 	intervalInput textinput.Model
 	webhookInput textinput.Model
-	alertVisual  bool
-	alertDesktop bool
-	done         bool
-	cancelled    bool
+	alertVisual       bool
+	alertDesktop      bool
+	cpuThresholdInput textinput.Model
+	memThresholdInput textinput.Model
+	done              bool
+	cancelled         bool
 }
 
 // newSetupModel creates a new setup wizard. If existing is non-nil, the fields
@@ -67,12 +72,22 @@ func newSetupModel(existing *store.MonitorConfig) setupModel {
 	webhook.Placeholder = "https://hooks.example.com/alert (optional)"
 	webhook.CharLimit = 512
 
+	cpuTh := textinput.New()
+	cpuTh.Placeholder = "% (default: 80)"
+	cpuTh.CharLimit = 3
+
+	memTh := textinput.New()
+	memTh.Placeholder = "% (default: 80)"
+	memTh.CharLimit = 3
+
 	m := setupModel{
-		step:          stepType,
-		targetInput:   target,
-		nameInput:     name,
-		intervalInput: interval,
-		webhookInput:  webhook,
+		step:              stepType,
+		targetInput:       target,
+		nameInput:         name,
+		intervalInput:     interval,
+		webhookInput:      webhook,
+		cpuThresholdInput: cpuTh,
+		memThresholdInput: memTh,
 	}
 
 	// Pre-fill for editing
@@ -91,6 +106,12 @@ func newSetupModel(existing *store.MonitorConfig) setupModel {
 		m.alertVisual = existing.Alerts.Visual
 		m.alertDesktop = existing.Alerts.Desktop
 		m.webhookInput.SetValue(existing.Alerts.Webhook)
+		if existing.CPUThreshold > 0 {
+			m.cpuThresholdInput.SetValue(strconv.FormatFloat(existing.CPUThreshold, 'f', 0, 64))
+		}
+		if existing.MemThreshold > 0 {
+			m.memThresholdInput.SetValue(strconv.FormatFloat(existing.MemThreshold, 'f', 0, 64))
+		}
 	}
 
 	return m
@@ -120,6 +141,10 @@ func (m setupModel) Update(msg tea.Msg) (setupModel, tea.Cmd) {
 		return m.updateTextStep(&m.nameInput, key, msg)
 	case stepInterval:
 		return m.updateTextStep(&m.intervalInput, key, msg)
+	case stepCPUThreshold:
+		return m.updateTextStep(&m.cpuThresholdInput, key, msg)
+	case stepMemThreshold:
+		return m.updateTextStep(&m.memThresholdInput, key, msg)
 	case stepAlertVisual:
 		return m.updateBoolStep(&m.alertVisual, key)
 	case stepAlertDesktop:
@@ -166,7 +191,7 @@ func (m setupModel) updateTypeStep(key tea.Key) (setupModel, tea.Cmd) {
 func (m setupModel) updateTextStep(input *textinput.Model, key tea.Key, msg tea.Msg) (setupModel, tea.Cmd) {
 	if key.Code == tea.KeyEnter {
 		input.Blur()
-		m.step++
+		m.step = m.nextStep(m.step)
 		return m, m.focusCurrentInput()
 	}
 
@@ -180,24 +205,24 @@ func (m setupModel) updateBoolStep(field *bool, key tea.Key) (setupModel, tea.Cm
 	switch key.Text {
 	case "y":
 		*field = true
-		m.step++
+		m.step = m.nextStep(m.step)
 		return m, m.focusCurrentInput()
 	case "n":
 		*field = false
-		m.step++
+		m.step = m.nextStep(m.step)
 		return m, m.focusCurrentInput()
 	case "Y":
 		*field = true
-		m.step++
+		m.step = m.nextStep(m.step)
 		return m, m.focusCurrentInput()
 	case "N":
 		*field = false
-		m.step++
+		m.step = m.nextStep(m.step)
 		return m, m.focusCurrentInput()
 	case "":
 		// Enter confirms the current value (default false)
 		if key.Code == tea.KeyEnter {
-			m.step++
+			m.step = m.nextStep(m.step)
 			return m, m.focusCurrentInput()
 		}
 	}
@@ -210,7 +235,7 @@ func (m setupModel) updateConfirmStep(key tea.Key) (setupModel, tea.Cmd) {
 	case tea.KeyEnter:
 		m.done = true
 	case tea.KeyBackspace:
-		m.step--
+		m.step = m.prevStep(m.step)
 		return m, m.focusCurrentInput()
 	}
 	return m, nil
@@ -226,6 +251,10 @@ func (m setupModel) updateTextInputs(msg tea.Msg) (setupModel, tea.Cmd) {
 		m.nameInput, cmd = m.nameInput.Update(msg)
 	case stepInterval:
 		m.intervalInput, cmd = m.intervalInput.Update(msg)
+	case stepCPUThreshold:
+		m.cpuThresholdInput, cmd = m.cpuThresholdInput.Update(msg)
+	case stepMemThreshold:
+		m.memThresholdInput, cmd = m.memThresholdInput.Update(msg)
 	case stepWebhook:
 		m.webhookInput, cmd = m.webhookInput.Update(msg)
 	}
@@ -241,10 +270,36 @@ func (m setupModel) focusCurrentInput() tea.Cmd {
 		return m.nameInput.Focus()
 	case stepInterval:
 		return m.intervalInput.Focus()
+	case stepCPUThreshold:
+		return m.cpuThresholdInput.Focus()
+	case stepMemThreshold:
+		return m.memThresholdInput.Focus()
 	case stepWebhook:
 		return m.webhookInput.Focus()
 	}
 	return nil
+}
+
+// nextStep returns the step after the given one, skipping threshold steps for non-process types.
+func (m setupModel) nextStep(current setupStep) setupStep {
+	next := current + 1
+	if monitorTypes[m.typeIdx] != "process" {
+		if next == stepCPUThreshold || next == stepMemThreshold {
+			return stepAlertVisual
+		}
+	}
+	return next
+}
+
+// prevStep returns the step before the given one, skipping threshold steps for non-process types.
+func (m setupModel) prevStep(current setupStep) setupStep {
+	prev := current - 1
+	if monitorTypes[m.typeIdx] != "process" {
+		if prev == stepMemThreshold || prev == stepCPUThreshold {
+			return stepInterval
+		}
+	}
+	return prev
 }
 
 // View renders the current wizard step with progress indicators.
@@ -277,11 +332,19 @@ func (m setupModel) View() string {
 		sections = append(sections, helpStyle.Render("  j/k:navigate  enter:select  esc:cancel"))
 
 	case stepTarget:
-		sections = append(sections, titleStyle.Render("Enter Target"))
+		title := "Enter Target"
+		if monitorTypes[m.typeIdx] == "process" {
+			title = "Enter Process Name"
+		}
+		sections = append(sections, titleStyle.Render(title))
 		sections = append(sections, "")
 		sections = append(sections, "  "+m.targetInput.View())
 		sections = append(sections, "")
-		sections = append(sections, helpStyle.Render("  enter:next  esc:cancel"))
+		hint := helpStyle.Render("  enter:next  esc:cancel")
+		if monitorTypes[m.typeIdx] == "process" {
+			hint = helpStyle.Render("  e.g. nginx, postgres, redis  |  enter:next  esc:cancel")
+		}
+		sections = append(sections, hint)
 
 	case stepName:
 		sections = append(sections, titleStyle.Render("Enter Name"))
@@ -294,6 +357,20 @@ func (m setupModel) View() string {
 		sections = append(sections, titleStyle.Render("Check Interval (seconds)"))
 		sections = append(sections, "")
 		sections = append(sections, "  "+m.intervalInput.View())
+		sections = append(sections, "")
+		sections = append(sections, helpStyle.Render("  enter:next  esc:cancel"))
+
+	case stepCPUThreshold:
+		sections = append(sections, titleStyle.Render("CPU Threshold (%)"))
+		sections = append(sections, "")
+		sections = append(sections, "  "+m.cpuThresholdInput.View())
+		sections = append(sections, "")
+		sections = append(sections, helpStyle.Render("  enter:next  esc:cancel"))
+
+	case stepMemThreshold:
+		sections = append(sections, titleStyle.Render("Memory Threshold (%)"))
+		sections = append(sections, "")
+		sections = append(sections, "  "+m.memThresholdInput.View())
 		sections = append(sections, "")
 		sections = append(sections, helpStyle.Render("  enter:next  esc:cancel"))
 
@@ -334,6 +411,10 @@ func (m setupModel) renderProgress() string {
 	var parts []string
 	for i, label := range stepLabels {
 		step := setupStep(i)
+		// Skip threshold steps for non-process types
+		if monitorTypes[m.typeIdx] != "process" && (step == stepCPUThreshold || step == stepMemThreshold) {
+			continue
+		}
 		switch {
 		case step == m.step:
 			parts = append(parts, titleStyle.Render("-> "+label))
@@ -354,11 +435,35 @@ func (m setupModel) renderSummary() string {
 		fmt.Sprintf("  %s %s", labelStyle.Render("Target"), valueStyle.Render(m.targetInput.Value())),
 		fmt.Sprintf("  %s %s", labelStyle.Render("Name"), valueStyle.Render(m.nameInput.Value())),
 		fmt.Sprintf("  %s %s", labelStyle.Render("Interval"), valueStyle.Render(fmt.Sprintf("%ds", interval))),
+	}
+	if monitorTypes[m.typeIdx] == "process" {
+		lines = append(lines,
+			fmt.Sprintf("  %s %s", labelStyle.Render("CPU Threshold"), valueStyle.Render(fmt.Sprintf("%.0f%%", m.cpuThresholdValue()))),
+			fmt.Sprintf("  %s %s", labelStyle.Render("Mem Threshold"), valueStyle.Render(fmt.Sprintf("%.0f%%", m.memThresholdValue()))),
+		)
+	}
+	lines = append(lines,
 		fmt.Sprintf("  %s %s", labelStyle.Render("Visual Alert"), valueStyle.Render(boolLabel(m.alertVisual))),
 		fmt.Sprintf("  %s %s", labelStyle.Render("Desktop Alert"), valueStyle.Render(boolLabel(m.alertDesktop))),
 		fmt.Sprintf("  %s %s", labelStyle.Render("Webhook"), valueStyle.Render(m.webhookInput.Value())),
-	}
+	)
 	return strings.Join(lines, "\n")
+}
+
+// cpuThresholdValue parses the CPU threshold input, defaulting to 80%.
+func (m setupModel) cpuThresholdValue() float64 {
+	if v, err := strconv.ParseFloat(m.cpuThresholdInput.Value(), 64); err == nil && v > 0 {
+		return v
+	}
+	return 80
+}
+
+// memThresholdValue parses the memory threshold input, defaulting to 80%.
+func (m setupModel) memThresholdValue() float64 {
+	if v, err := strconv.ParseFloat(m.memThresholdInput.Value(), 64); err == nil && v > 0 {
+		return v
+	}
+	return 80
 }
 
 // toConfig converts the wizard state into a MonitorConfig.

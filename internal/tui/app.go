@@ -432,6 +432,16 @@ func (a *App) addMonitorFromConfig(cfg store.MonitorConfig) {
 		checker = monitor.NewSystemCheck(cfg.ID)
 	case "command":
 		checker = monitor.NewCustomCheck(cfg.ID, cfg.Command, 5*time.Second)
+	case "process":
+		cpuTh := cfg.CPUThreshold
+		if cpuTh == 0 {
+			cpuTh = 80
+		}
+		memTh := cfg.MemThreshold
+		if memTh == 0 {
+			memTh = 80
+		}
+		checker = monitor.NewProcessCheck(cfg.ID, cfg.Target, cpuTh, memTh)
 	default:
 		a.eventLog.Add(cfg.Name, fmt.Sprintf("unknown type: %s", cfg.Type), true)
 		return
@@ -500,6 +510,10 @@ func (a *App) saveFromSetup() {
 	// For command type, store the target as the command
 	if cfg.Type == "command" {
 		cfg.Command = cfg.Target
+	}
+	if cfg.Type == "process" {
+		cfg.CPUThreshold = a.setupModel.cpuThresholdValue()
+		cfg.MemThreshold = a.setupModel.memThresholdValue()
 	}
 
 	a.configs = append(a.configs, cfg)
