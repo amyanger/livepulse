@@ -604,6 +604,23 @@ func renderHelp(width int) string {
 	}
 
 	sections = append(sections, "")
+	sections = append(sections, titleStyle.Render("Monitor Types"))
+	sections = append(sections, "")
+	typeDescs := []struct{ name, desc string }{
+		{"http", "Check HTTP endpoint status and response time"},
+		{"tcp", "Verify TCP port is accepting connections"},
+		{"system", "Monitor CPU, memory, and disk usage"},
+		{"command", "Run a shell command, healthy if exit 0"},
+		{"process", "Watch a named process, alert on high CPU/memory"},
+	}
+	for _, td := range typeDescs {
+		sections = append(sections, fmt.Sprintf("  %s  %s",
+			labelStyle.Render(td.name),
+			valueStyle.Render(td.desc),
+		))
+	}
+
+	sections = append(sections, "")
 	sections = append(sections, helpStyle.Render("  Press esc, ?, or q to return"))
 
 	return strings.Join(sections, "\n")
