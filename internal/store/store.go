@@ -22,8 +22,10 @@ type MonitorConfig struct {
 	Interval int         `json:"interval"`
 	Alerts   AlertConfig `json:"alerts"`
 	// Custom check fields
-	Command        string `json:"command,omitempty"`
-	ExpectedStatus int    `json:"expected_status,omitempty"`
+	Command        string  `json:"command,omitempty"`
+	ExpectedStatus int     `json:"expected_status,omitempty"`
+	CPUThreshold   float64 `json:"cpu_threshold,omitempty"`
+	MemThreshold   float64 `json:"mem_threshold,omitempty"`
 }
 
 type Store struct {
