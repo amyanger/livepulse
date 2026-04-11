@@ -50,12 +50,23 @@ func (m *Manager) Record(monitorID string, success bool) *Transition {
 	}
 
 	switch state.status {
-	case StatusHealthy, StatusRecovered:
+	case StatusHealthy:
 		if state.consecutiveFails >= m.failThreshold {
-			prev := state.status
 			state.status = StatusDown
 			state.consecutiveFails = 0
-			return &Transition{MonitorID: monitorID, From: prev, To: StatusDown}
+			return &Transition{MonitorID: monitorID, From: StatusHealthy, To: StatusDown}
+		}
+
+	case StatusRecovered:
+		if success {
+			state.status = StatusHealthy
+			state.consecutiveOK = 0
+			return nil
+		}
+		if state.consecutiveFails >= m.failThreshold {
+			state.status = StatusDown
+			state.consecutiveFails = 0
+			return &Transition{MonitorID: monitorID, From: StatusRecovered, To: StatusDown}
 		}
 
 	case StatusDown:
