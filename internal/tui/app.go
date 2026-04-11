@@ -66,8 +66,9 @@ type App struct {
 
 	// Sub-views
 	setupModel setupModel
-	detailID   string
-	editing    bool // true when setup is editing an existing monitor
+	detailID      string
+	editing       bool   // true when setup is editing an existing monitor
+	pendingDelete string // monitor ID awaiting delete confirmation
 }
 
 // NewApp creates a new App with sensible defaults.
@@ -168,20 +169,25 @@ func (a *App) updateDashboard(msg tea.Msg) (tea.Model, tea.Cmd) {
 	key := keyMsg.Key()
 	switch key.Text {
 	case "q":
+		a.clearPendingDelete()
 		return a, tea.Quit
 	case "j":
+		a.clearPendingDelete()
 		if a.selected < len(a.monitors)-1 {
 			a.selected++
 		}
 	case "k":
+		a.clearPendingDelete()
 		if a.selected > 0 {
 			a.selected--
 		}
 	case "a":
+		a.clearPendingDelete()
 		a.editing = false
 		a.setupModel = newSetupModel(nil)
 		a.currentView = viewSetup
 	case "e":
+		a.clearPendingDelete()
 		if len(a.monitors) > 0 {
 			cfg := a.configForID(a.monitors[a.selected].ID)
 			if cfg != nil {
@@ -193,15 +199,25 @@ func (a *App) updateDashboard(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case "d":
 		if len(a.monitors) > 0 {
-			a.deleteMonitor(a.monitors[a.selected].ID)
-			if a.selected >= len(a.monitors) && a.selected > 0 {
-				a.selected--
+			id := a.monitors[a.selected].ID
+			if a.pendingDelete == id {
+				a.deleteMonitor(id)
+				a.pendingDelete = ""
+				if a.selected >= len(a.monitors) && a.selected > 0 {
+					a.selected--
+				}
+			} else {
+				a.pendingDelete = id
+				name := a.monitors[a.selected].Name
+				a.eventLog.Add(name, "press d again to confirm delete", false)
 			}
 		}
 	case "?":
+		a.clearPendingDelete()
 		a.currentView = viewHelp
 	default:
 		if key.Code == tea.KeyEnter {
+			a.clearPendingDelete()
 			if len(a.monitors) > 0 {
 				a.detailID = a.monitors[a.selected].ID
 				a.currentView = viewDetail
@@ -221,8 +237,10 @@ func (a *App) updateDetail(msg tea.Msg) (tea.Model, tea.Cmd) {
 	key := keyMsg.Key()
 	switch {
 	case key.Code == tea.KeyEscape:
+		a.clearPendingDelete()
 		a.currentView = viewDashboard
 	case key.Text == "e":
+		a.clearPendingDelete()
 		cfg := a.configForID(a.detailID)
 		if cfg != nil {
 			a.editing = true
@@ -230,10 +248,23 @@ func (a *App) updateDetail(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.currentView = viewSetup
 		}
 	case key.Text == "d":
-		a.deleteMonitor(a.detailID)
-		a.currentView = viewDashboard
-		if a.selected >= len(a.monitors) && a.selected > 0 {
-			a.selected--
+		if a.pendingDelete == a.detailID {
+			a.deleteMonitor(a.detailID)
+			a.pendingDelete = ""
+			a.currentView = viewDashboard
+			if a.selected >= len(a.monitors) && a.selected > 0 {
+				a.selected--
+			}
+		} else {
+			a.pendingDelete = a.detailID
+			name := ""
+			for _, m := range a.monitors {
+				if m.ID == a.detailID {
+					name = m.Name
+					break
+				}
+			}
+			a.eventLog.Add(name, "press d again to confirm delete", false)
 		}
 	}
 
@@ -484,6 +515,11 @@ func (a *App) configForID(id string) *store.MonitorConfig {
 		}
 	}
 	return nil
+}
+
+// clearPendingDelete resets the pending delete state.
+func (a *App) clearPendingDelete() {
+	a.pendingDelete = ""
 }
 
 // detailData returns the MonitorView, results, and sparkline for the detail view.
