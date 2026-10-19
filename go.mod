@@ -1,4 +1,4 @@
-module github.com/arjunmyanger/livepulse
+module github.com/amyanger/livepulse
 
 go 1.25.0
 

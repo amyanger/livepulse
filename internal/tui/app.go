@@ -8,10 +8,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/arjunmyanger/livepulse/internal/alert"
-	"github.com/arjunmyanger/livepulse/internal/monitor"
-	"github.com/arjunmyanger/livepulse/internal/store"
-	"github.com/arjunmyanger/livepulse/internal/tui/components"
+	"github.com/amyanger/livepulse/internal/alert"
+	"github.com/amyanger/livepulse/internal/monitor"
+	"github.com/amyanger/livepulse/internal/store"
+	"github.com/amyanger/livepulse/internal/tui/components"
 )
 
 // view represents the current active view in the TUI.

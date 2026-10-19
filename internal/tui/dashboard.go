@@ -8,8 +8,8 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"github.com/arjunmyanger/livepulse/internal/monitor"
-	"github.com/arjunmyanger/livepulse/internal/tui/components"
+	"github.com/amyanger/livepulse/internal/monitor"
+	"github.com/amyanger/livepulse/internal/tui/components"
 )
 
 // MonitorView holds the display state for a single monitor on the dashboard.

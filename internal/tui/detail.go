@@ -7,8 +7,8 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"github.com/arjunmyanger/livepulse/internal/monitor"
-	"github.com/arjunmyanger/livepulse/internal/tui/components"
+	"github.com/amyanger/livepulse/internal/monitor"
+	"github.com/amyanger/livepulse/internal/tui/components"
 )
 
 // renderDetail renders the single monitor detail view with polished styling.

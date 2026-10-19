@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arjunmyanger/livepulse/internal/monitor"
-	"github.com/arjunmyanger/livepulse/internal/store"
+	"github.com/amyanger/livepulse/internal/monitor"
+	"github.com/amyanger/livepulse/internal/store"
 )
 
 func TestEndToEnd_MonitorHTTP(t *testing.T) {

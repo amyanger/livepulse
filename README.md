@@ -18,7 +18,7 @@ Real-time infrastructure monitor with a full interactive TUI dashboard. Single G
 ## Install
 
 ```bash
-go install github.com/arjunmyanger/livepulse/cmd/livepulse@latest
+go install github.com/amyanger/livepulse/cmd/livepulse@latest
 ```
 
 Or build from source:

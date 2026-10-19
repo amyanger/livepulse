@@ -8,7 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/bubbles/v2/textinput"
 
-	"github.com/arjunmyanger/livepulse/internal/store"
+	"github.com/amyanger/livepulse/internal/store"
 )
 
 // setupStep represents the current step in the setup wizard.

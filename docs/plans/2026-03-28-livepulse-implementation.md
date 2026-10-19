@@ -1730,8 +1730,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss/v2"
 
-	"github.com/arjunmyanger/livepulse/internal/monitor"
-	"github.com/arjunmyanger/livepulse/internal/tui/components"
+	"github.com/amyanger/livepulse/internal/monitor"
+	"github.com/amyanger/livepulse/internal/tui/components"
 )
 
 type MonitorView struct {
@@ -1853,8 +1853,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/arjunmyanger/livepulse/internal/monitor"
-	"github.com/arjunmyanger/livepulse/internal/tui/components"
+	"github.com/amyanger/livepulse/internal/monitor"
+	"github.com/amyanger/livepulse/internal/tui/components"
 	"github.com/charmbracelet/lipgloss/v2"
 )
 
@@ -1970,7 +1970,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 
-	"github.com/arjunmyanger/livepulse/internal/store"
+	"github.com/amyanger/livepulse/internal/store"
 )
 
 type setupStep int
@@ -2314,10 +2314,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 
-	"github.com/arjunmyanger/livepulse/internal/alert"
-	"github.com/arjunmyanger/livepulse/internal/monitor"
-	"github.com/arjunmyanger/livepulse/internal/store"
-	"github.com/arjunmyanger/livepulse/internal/tui/components"
+	"github.com/amyanger/livepulse/internal/alert"
+	"github.com/amyanger/livepulse/internal/monitor"
+	"github.com/amyanger/livepulse/internal/store"
+	"github.com/amyanger/livepulse/internal/tui/components"
 )
 
 type view int
@@ -2768,7 +2768,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 
-	"github.com/arjunmyanger/livepulse/internal/tui"
+	"github.com/amyanger/livepulse/internal/tui"
 )
 
 func main() {
@@ -2836,8 +2836,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arjunmyanger/livepulse/internal/monitor"
-	"github.com/arjunmyanger/livepulse/internal/store"
+	"github.com/amyanger/livepulse/internal/monitor"
+	"github.com/amyanger/livepulse/internal/store"
 )
 
 func TestEndToEnd_MonitorHTTP(t *testing.T) {

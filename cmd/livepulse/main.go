@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/arjunmyanger/livepulse/internal/tui"
+	"github.com/amyanger/livepulse/internal/tui"
 )
 
 func main() {
